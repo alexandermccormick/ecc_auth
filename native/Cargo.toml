@@ -1,0 +1,17 @@
+[package]
+name = "ecc_auth"
+version = "0.1.0"
+authors = ["Alexander McCormick <alexandermccormick@protonmail.com>"]
+license = "MIT"
+build = "build.rs"
+exclude = ["artifacts.json", "index.node"]
+
+[lib]
+name = "ecc_auth"
+crate-type = ["dylib"]
+
+[build-dependencies]
+neon-build = "0.2.0"
+
+[dependencies]
+neon = "0.2.0"
