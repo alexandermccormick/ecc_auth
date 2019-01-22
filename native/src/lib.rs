@@ -1,12 +1,45 @@
 #[macro_use]
 extern crate neon;
+extern crate sodiumoxide;
+extern crate neon_serde;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde_json;
+
+mod keyring;
+mod auth_token;
+
+use keyring::Keyring;
+use auth_token::AuthToken;
 
 use neon::prelude::*;
 
-fn hello(mut cx: FunctionContext) -> JsResult<JsString> {
-    Ok(cx.string("hello node"))
+pub struct EccAuth {
+  keyring: Keyring,
 }
 
-register_module!(mut cx, {
-    cx.export_function("hello", hello)
-});
+impl EccAuth {
+  fn new(keyring_dir_path: &str) -> EccAuth {
+    let keyring = Keyring::new(&keyring_dir_path);
+
+    EccAuth {
+      keyring
+    }
+  }
+
+  fn sign(token: AuthToken) -> () {()}
+}
+
+declare_types! {
+  pub class JsEccAuth for EccAuth {
+    init(mut cx) {
+      let keyring_dir_path: Handle<JsString> = cx.argument::<JsString>(0)?;
+      let ecc_auth = EccAuth::new(&keyring_dir_path.value());
+
+      Ok(ecc_auth)
+    }
+
+    method sign(mut cx) -> () {()}
+  }
+}
+register_module!(mut m, { m.export_class::<JsEccAuth>("EccAuth") });
