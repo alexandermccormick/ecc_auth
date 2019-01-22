@@ -1,4 +1,5 @@
 use std::time::{SystemTime, UNIX_EPOCH};
+use std::cmp::Ordering;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AuthToken {
@@ -38,14 +39,15 @@ impl AuthTokenHeader {
             };
             ms + &self.iat
         };
-        let today = SystemTime::now()
+        let today: u64 = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
-            .as_millis();
-        if exp_time > today as u64 {
-            true
-        } else {
-            false
+            .as_millis() as u64;
+
+        match exp_time.cmp(&today) {
+          Ordering::Greater => true,
+          Ordering::Equal => true,
+          Ordering::Less => false
         }
     }
 }
