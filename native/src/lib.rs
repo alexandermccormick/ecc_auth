@@ -1,16 +1,16 @@
 #[macro_use]
 extern crate neon;
-extern crate sodiumoxide;
 extern crate neon_serde;
+extern crate sodiumoxide;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
 
-mod keyring;
 mod auth_token;
+mod keyring;
 
-use keyring::Keyring;
 use auth_token::AuthToken;
+use keyring::Keyring;
 
 use neon::prelude::*;
 
@@ -22,12 +22,10 @@ impl EccAuth {
   fn new(keyring_dir_path: &str) -> EccAuth {
     let keyring = Keyring::new(&keyring_dir_path);
 
-    EccAuth {
-      keyring
-    }
+    EccAuth { keyring }
   }
 
-  fn sign(token: AuthToken) -> () {()}
+  fn sign(token: AuthToken) -> () {}
 }
 
 declare_types! {
@@ -39,7 +37,7 @@ declare_types! {
       Ok(ecc_auth)
     }
 
-    method sign(mut cx) -> () {()}
+    method sign(mut cx) -> () {}
   }
 }
 register_module!(mut m, { m.export_class::<JsEccAuth>("EccAuth") });
