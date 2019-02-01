@@ -13,6 +13,7 @@ use auth_token::AuthToken;
 use keyring::Keyring;
 
 use neon::prelude::*;
+use sodiumoxide::crypto::sign::PublicKey;
 
 pub struct EccAuth {
   keyring: Keyring,
@@ -24,7 +25,7 @@ impl EccAuth {
 
     EccAuth { keyring }
   }
-
+  
   fn sign(token: AuthToken) -> () {}
 }
 
@@ -37,7 +38,19 @@ declare_types! {
       Ok(ecc_auth)
     }
 
-    method sign(mut cx) -> () {}
+    method sign(mut cx) {
+      // just an example of how to return data
+      let pk = {
+        let this = cx.this();
+        let guard = &mut cx.lock();
+        let ecc_auth = this.borrow(&guard);
+        ecc_auth.keyring.public_key
+      };
+      println!("{:?}", pk);
+
+
+      Ok(cx.boolean(true).upcast())
+    }
   }
 }
 register_module!(mut m, { m.export_class::<JsEccAuth>("EccAuth") });

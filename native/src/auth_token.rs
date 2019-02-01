@@ -1,5 +1,5 @@
-use std::time::{SystemTime, UNIX_EPOCH};
 use std::cmp::Ordering;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AuthToken {
@@ -26,6 +26,7 @@ struct AuthTokenHeader {
 
 impl AuthTokenHeader {
   fn is_expired(&self) -> bool {
+    // might not need to clone
     let exp_field: &String = &self.exp.clone();
     let parts: Vec<&str> = exp_field.split(" ").collect();
     let exp_time: u64 = {
