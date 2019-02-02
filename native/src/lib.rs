@@ -13,10 +13,9 @@ use auth_token::AuthToken;
 use keyring::Keyring;
 
 use neon::prelude::*;
-use sodiumoxide::crypto::sign::PublicKey;
 
 pub struct EccAuth {
-  keyring: Keyring,
+  keyring: Keyring
 }
 
 impl EccAuth {
@@ -26,7 +25,7 @@ impl EccAuth {
     EccAuth { keyring }
   }
   
-  fn sign(token: AuthToken) -> () {}
+  fn sign(raw_token: AuthToken) -> () {}
 }
 
 declare_types! {
@@ -39,18 +38,27 @@ declare_types! {
     }
 
     method sign(mut cx) {
-      // just an example of how to return data
-      let pk = {
-        let this = cx.this();
-        let guard = &mut cx.lock();
-        let ecc_auth = this.borrow(&guard);
-        ecc_auth.keyring.public_key
-      };
-      println!("{:?}", pk);
+      let token_obj = cx.argument::<JsValue>(0)?;
+      let raw_token: AuthToken = neon_serde::from_value(&mut cx, token_obj)?;
+      
+      println!("Token is expired: {:?}", raw_token.is_expired());
+      println!("{:?}", raw_token);
 
 
       Ok(cx.boolean(true).upcast())
     }
+
+    // method showKey(mut cx) {
+    //   // just an example of how to return data
+    //   let pk = {
+    //     let this = cx.this();
+    //     let guard = &mut cx.lock();
+    //     let ecc_auth = this.borrow(&guard);
+    //     ecc_auth.keyring.public_key
+    //   };
+    //   println!("{:?}", pk);
+    //   Ok(cx.boolean(true).upcast())
+    // }
   }
 }
 register_module!(mut m, { m.export_class::<JsEccAuth>("EccAuth") });
