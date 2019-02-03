@@ -26,6 +26,7 @@ impl Keyring {
   }
 
   fn create_keys(keyring_path_buf: &mut PathBuf) -> Keyring {
+    println!("Pathbuf {:?}", keyring_path_buf);
     let (public_key, secret_key) = sign::gen_keypair();
 
     Keyring::write_public_key(&public_key.0, keyring_path_buf);
@@ -91,7 +92,7 @@ impl Keyring {
 
   fn load_pub_key(keyring_path_buf: &mut PathBuf) -> PublicKey {
     keyring_path_buf.push("public.key");
-    let mut pub_key_file = File::open(&keyring_path_buf).unwrap();
+    let mut pub_key_file = File::open(&keyring_path_buf).expect("Could not load public key!!!");
     let mut pub_key_arr: [u8; 32] = [0; 32];
     pub_key_file.read_exact(&mut pub_key_arr).ok();
     keyring_path_buf.pop();
@@ -99,8 +100,8 @@ impl Keyring {
   }
 
   fn load_secret_key(keyring_path_buf: &mut PathBuf) -> SecretKey {
-    keyring_path_buf.set_file_name("secret.key");
-    let mut secret_key_file = File::open(&keyring_path_buf).unwrap();
+    keyring_path_buf.push("secret.key");
+    let mut secret_key_file = File::open(&keyring_path_buf).expect("Could not load secret key!!!");
     let mut secret_key_arr: [u8; 64] = [0; 64];
     secret_key_file.read_exact(&mut secret_key_arr).ok();
     keyring_path_buf.pop();
