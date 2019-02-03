@@ -5,14 +5,20 @@ extern crate sodiumoxide;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
+extern crate bincode;
+extern crate base64;
 
-mod auth_token;
+mod token;
 mod keyring;
 
-use auth_token::AuthToken;
+use token::Token;
 use keyring::Keyring;
 
 use neon::prelude::*;
+use sodiumoxide::crypto::sign;
+use sodiumoxide::crypto::hash::sha512;
+use bincode::serialize;
+use base64::URL_SAFE_NO_PAD;
 
 pub struct EccAuth {
   keyring: Keyring
@@ -24,8 +30,6 @@ impl EccAuth {
 
     EccAuth { keyring }
   }
-  
-  fn sign(raw_token: AuthToken) -> () {}
 }
 
 declare_types! {
@@ -38,14 +42,26 @@ declare_types! {
     }
 
     method sign(mut cx) {
-      let token_obj = cx.argument::<JsValue>(0)?;
-      let raw_token: AuthToken = neon_serde::from_value(&mut cx, token_obj)?;
-      
-      println!("Token is expired: {:?}", raw_token.is_expired());
-      println!("{:?}", raw_token);
+      let raw_obj = cx.argument::<JsValue>(0)?;
+      let token: Token = neon_serde::from_value(&mut cx, raw_obj)?;
 
+      let header = serde_json::to_string(&token.header).ok().expect("Could not stringify header!!!");
+      let body = serde_json::to_string(&token.body).ok().expect("Could not stringify body!!!");
+      let b64_header = base64::encode_config(&header, URL_SAFE_NO_PAD);
+      let b64_body = base64::encode_config(&body, URL_SAFE_NO_PAD);
+      let b64_token = [b64_header, b64_body].join(".");
 
-      Ok(cx.boolean(true).upcast())
+      let sig = {
+        let this = cx.this();
+        let guard = &mut cx.lock();
+        let auth = this.borrow(&guard);
+        let token_hash = sha512::hash(&b64_token.as_bytes());
+        sign::sign_detached(&token_hash.0, &auth.keyring.secret_key)
+      };
+
+      let b64_sig = base64::encode_config(&sig, URL_SAFE_NO_PAD);
+      let signed_token = [b64_token, b64_sig].join(".");
+      Ok(cx.string(signed_token).upcast())
     }
 
     // method showKey(mut cx) {
