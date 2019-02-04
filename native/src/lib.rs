@@ -12,13 +12,17 @@ mod token;
 mod keyring;
 
 use token::Token;
+use token::TokenHeader;
+use token::TokenBody;
+use token::TokenSignature;
 use keyring::Keyring;
 
 use neon::prelude::*;
 use sodiumoxide::crypto::sign;
-use sodiumoxide::crypto::hash::sha512;
-use bincode::serialize;
+// use sodiumoxide::crypto::hash::sha512;
+// use bincode::serialize;
 use base64::URL_SAFE_NO_PAD;
+// use sodiumoxide::crypto::sign::Signature;
 
 pub struct EccAuth {
   keyring: Keyring
@@ -42,39 +46,38 @@ declare_types! {
     }
 
     method sign(mut cx) {
-      let raw_obj = cx.argument::<JsValue>(0)?;
-      let token: Token = neon_serde::from_value(&mut cx, raw_obj)?;
-
-      let header = serde_json::to_string(&token.header).ok().expect("Could not stringify header!!!");
-      let body = serde_json::to_string(&token.body).ok().expect("Could not stringify body!!!");
-      let b64_header = base64::encode_config(&header, URL_SAFE_NO_PAD);
-      let b64_body = base64::encode_config(&body, URL_SAFE_NO_PAD);
-      let b64_token = [b64_header, b64_body].join(".");
-
+      let arg0 = cx.argument::<JsValue>(0)?;
+      let token: Token = neon_serde::from_value(&mut cx, arg0)?;
       let sig = {
         let this = cx.this();
         let guard = &mut cx.lock();
         let auth = this.borrow(&guard);
-        let token_hash = sha512::hash(&b64_token.as_bytes());
-        sign::sign_detached(&token_hash.0, &auth.keyring.secret_key)
+        sign::sign_detached(&token.hashed().0, &auth.keyring.secret_key)
       };
-
-      let b64_sig = base64::encode_config(&sig, URL_SAFE_NO_PAD);
-      let signed_token = [b64_token, b64_sig].join(".");
+      let sig_b64 = base64::encode_config(&sig, URL_SAFE_NO_PAD);
+      let signed_token = [token.as_b64(), sig_b64].join(".");
       Ok(cx.string(signed_token).upcast())
     }
 
-    // method showKey(mut cx) {
-    //   // just an example of how to return data
-    //   let pk = {
-    //     let this = cx.this();
-    //     let guard = &mut cx.lock();
-    //     let ecc_auth = this.borrow(&guard);
-    //     ecc_auth.keyring.public_key
-    //   };
-    //   println!("{:?}", pk);
-    //   Ok(cx.boolean(true).upcast())
-    // }
+  method verify(mut cx) {
+      let arg0: String = cx.argument::<JsString>(0)?.value();
+      let token_parts: Vec<&str> = arg0.split(".").collect();
+
+      let header = TokenHeader::from_b64(&token_parts[0]);
+      let body = TokenBody::from_b64(&token_parts[1]);
+      let sig = TokenSignature::from_b64(&token_parts[2]);
+      
+      let token = Token {
+        header,
+        body: body.value,
+        signature: Some(sig.value)
+      };
+      println!("{:?}", token);
+
+      //TODO: finish verifying token
+
+      Ok(cx.string("hello").upcast())
+    }
   }
 }
 register_module!(mut m, { m.export_class::<JsEccAuth>("EccAuth") });
