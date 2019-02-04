@@ -50,7 +50,6 @@ impl Keyring {
     keyring_path_buf.pop();
   }
 
-  // TODO: check for keys in dir first
   fn read_keys(keyring_path_buf: &mut PathBuf) -> Keyring {
     match Keyring::contains_keys(keyring_path_buf) {
       true => {
