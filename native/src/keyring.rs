@@ -26,7 +26,6 @@ impl Keyring {
   }
 
   fn create_keys(keyring_path_buf: &mut PathBuf) -> Keyring {
-    println!("Pathbuf {:?}", keyring_path_buf);
     let (public_key, secret_key) = sign::gen_keypair();
 
     Keyring::write_public_key(&public_key.0, keyring_path_buf);
