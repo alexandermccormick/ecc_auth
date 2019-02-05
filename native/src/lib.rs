@@ -5,7 +5,6 @@ extern crate sodiumoxide;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
-extern crate bincode;
 extern crate base64;
 
 mod token;
@@ -19,10 +18,7 @@ use keyring::Keyring;
 
 use neon::prelude::*;
 use sodiumoxide::crypto::sign;
-// use sodiumoxide::crypto::hash::sha512;
-// use bincode::serialize;
 use base64::URL_SAFE_NO_PAD;
-// use sodiumoxide::crypto::sign::Signature;
 
 pub struct EccAuth {
   keyring: Keyring
@@ -59,24 +55,24 @@ declare_types! {
       Ok(cx.string(signed_token).upcast())
     }
 
-  method verify(mut cx) {
+    method verify(mut cx) {
       let arg0: String = cx.argument::<JsString>(0)?.value();
       let token_parts: Vec<&str> = arg0.split(".").collect();
-
       let header = TokenHeader::from_b64(&token_parts[0]);
       let body = TokenBody::from_b64(&token_parts[1]);
       let sig = TokenSignature::from_b64(&token_parts[2]);
-      
       let token = Token {
         header,
-        body: body.value,
-        signature: Some(sig.value)
+        body: body.value
       };
-      println!("{:?}", token);
+      let is_verified = {
+        let this = cx.this();
+        let guard = &mut cx.lock();
+        let auth = this.borrow(&guard);
+        sign::verify_detached(&sig.value, &token.hashed().0, &auth.keyring.public_key)
+      };
 
-      //TODO: finish verifying token
-
-      Ok(cx.string("hello").upcast())
+      Ok(cx.boolean(is_verified).upcast())
     }
   }
 }
