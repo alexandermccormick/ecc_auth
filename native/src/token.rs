@@ -23,7 +23,6 @@ impl B64 for serde_json::Value {
 pub struct Token {
   pub header: TokenHeader,
   pub body: serde_json::Value,
-  pub signature: Option<Signature>
 }
 
 #[derive(Serialize, Deserialize, Debug)]
